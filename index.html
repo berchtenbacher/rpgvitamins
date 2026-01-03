@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Alchemist's Apothecary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Apothecary">
+
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+</head>
+<body class="bg-gray-900 text-white overflow-hidden h-screen w-screen relative">
+
+    <div id="bg-layer" class="absolute inset-0 z-0">
+        <img src="assets/background.jpg" class="w-full h-full object-cover opacity-60" onerror="this.src='https://images.unsplash.com/photo-1622643048696-670dc484606f?q=80&w=2070&auto=format&fit=crop'">
+    </div>
+
+    <div class="relative z-10 h-full flex flex-col p-4">
+        
+        <header class="flex justify-between items-center mb-4 px-4 border-b border-white/10 pb-2">
+            <h1 id="current-day" class="text-2xl text-amber-300 font-medieval drop-shadow-md">Loading...</h1>
+
+            <div class="flex gap-4">
+<button id="config-btn" class="group p-3 flex items-center justify-center transition-all bg-white/5 hover:bg-white/10 rounded-xl border border-white/5">
+    <svg xmlns="http://www.w3.org/2000/svg" 
+         viewBox="0 0 24 24" 
+         fill="none" 
+         stroke="currentColor" 
+         stroke-width="1.5" 
+         stroke-linecap="round" 
+         stroke-linejoin="round" 
+         class="w-7 h-7 text-amber-400 group-hover:scale-110 transition-transform">
+        <path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5h0c-1.4 0-2.5-1.1-2.5-2.5V2"/>
+        <path d="M8.5 2h7"/>
+        <path d="M14.5 16h-5"/>
+    </svg>
+</button>
+
+<button id="stats-btn" class="group p-3 flex items-center justify-center transition-all bg-white/5 hover:bg-white/10 rounded-xl border border-white/5">
+    <svg xmlns="http://www.w3.org/2000/svg" 
+         viewBox="0 0 24 24"  
+         fill="none" 
+         stroke="currentColor" 
+         stroke-width="1.5" 
+         stroke-linecap="round" 
+         stroke-linejoin="round" 
+         class="w-7 h-7 text-amber-400 group-hover:scale-110 transition-transform">
+        <path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 0 0 2 2Z"/><path d="M15 21v-4a2 2 0 0 1 2-2h5"/><path d="M4 3v15a2 2 0 0 0 2 2h10"/>
+    </svg>
+</button>
+            </div>
+        </header>
+
+        <main class="flex-grow flex items-center justify-center overflow-hidden">
+            <div id="glass-table" class="glass-panel w-full max-w-6xl h-[85vh] p-8 rounded-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 overflow-y-auto content-start justify-items-center">
+                </div>
+        </main>
+
+        <div class="flex justify-center mb-4">
+        <button id="test-reset-day" class="text-[10px] font-mono opacity-30 hover:opacity-100 bg-black/50 text-amber-500 px-3 py-1 rounded-full border border-amber-900 transition-all">
+        Simulate New Day
+        </button>
+        </div>
+
+        <div id="completion-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 hidden pointer-events-none opacity-0 transition-opacity duration-1000">
+            <div class="text-center transform scale-95 transition-transform duration-1000" id="completion-message">
+                <h2 class="text-4xl text-amber-300 font-medieval mb-2">Concoctions Complete</h2>
+                <p class="text-xl text-gray-300 font-medieval italic">Your constitution is bolstered.</p>
+            </div>
+        </div>
+
+        <div id="reward-popup" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 glass-sidebar p-6 rounded-lg shadow-2xl hidden flex-col items-center animate-bounce-in">
+            <h3 class="text-amber-300 font-medieval text-xl mb-2">New Item Discovered!</h3>
+            <div id="reward-sprite" class="text-6xl mb-2">🎁</div>
+            <div id="reward-name" class="font-bold text-white mb-1">Item Name</div>
+            <div id="reward-desc" class="text-xs text-gray-400 italic">Description here</div>
+        </div>
+    </div>
+
+    <aside id="stats-sidebar" class="fixed top-0 right-0 h-full w-80 glass-sidebar z-50 transform translate-x-full transition-transform duration-300 shadow-2xl p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-600 pb-4">
+            <h2 class="text-2xl font-medieval text-amber-200">Alchemist Log</h2>
+            <button id="close-stats" class="text-2xl text-red-300 hover:text-red-100">&times;</button>
+        </div>
+
+        <div class="mb-6 text-center">
+            <div class="text-amber-400 font-medieval text-xl mb-2" id="player-title">Novice</div>
+            <div class="w-full h-4 bg-gray-800 border-2 border-gray-600 rounded-full overflow-hidden relative shadow-inner mb-2">
+                <div id="xp-bar" class="h-full bg-gradient-to-r from-green-700 to-green-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+            
+            <button id="reset-progress-btn" class="text-[10px] text-red-500 hover:text-red-300 border border-red-900 hover:border-red-500 px-2 py-1 rounded bg-black/30 transition">
+                Reset Progress (Testing)
+            </button>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="font-medieval text-lg mb-2 text-gray-300">Collection</h3>
+            <div id="rewards-container" class="flex flex-wrap gap-3 p-3 bg-black/20 rounded-lg min-h-[80px]">
+                </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto">
+            <h3 class="font-medieval text-lg mb-2 text-gray-300">History (7 Days)</h3>
+            <ul id="history-list" class="space-y-3 text-sm">
+                </ul>
+        </div>
+    </aside>
+
+    <aside id="config-sidebar" class="fixed top-0 right-0 h-full w-96 glass-sidebar z-40 transform translate-x-full transition-transform duration-300 shadow-2xl p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-600 pb-4">
+            <h2 class="text-2xl font-medieval text-amber-200">Configurator</h2>
+            <button id="close-config" class="text-2xl text-red-300 hover:text-red-100">&times;</button>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="font-medieval text-lg mb-2 text-gray-300">Add Supplement</h3>
+            <input type="text" id="add-input" placeholder="e.g. Iron, Vitamin C..." class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none focus:border-amber-500 mb-2">
+            
+            <div class="flex justify-between gap-1 mb-3" id="day-selector">
+                </div>
+
+            <button id="add-btn" class="w-full bg-amber-700 hover:bg-amber-600 text-white font-medieval py-2 rounded shadow transition">Add to Routine</button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto">
+            <h3 class="font-medieval text-lg mb-2 text-gray-300">Active Brews</h3>
+            <ul id="active-list" class="space-y-2">
+                </ul>
+        </div>
+    </aside>
+
+    <script type="module" src="app.js"></script>
+
+    <div id="effects-container" class="fixed inset-0 z-[100] pointer-events-none"></div>
+    
+    <script type="module" src="app.js"></script>
+</body>
+</body>
+</html>

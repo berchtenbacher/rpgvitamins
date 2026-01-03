@@ -1,0 +1,183 @@
+body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    overscroll-behavior-y: contain; /* Prevents bounce-to-refresh */
+}
+
+.font-medieval { font-family: 'MedievalSharp', cursive; }
+.font-mono { font-family: 'Press Start 2P', monospace; }
+
+.pixel-art {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* Background and Glass Styles */
+.glass-panel {
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(0px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+.glass-sidebar {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(180, 83, 9, 0.3);
+}
+
+#config-btn:hover svg {
+    transform: rotate(15deg) scale(1.1); /* Tilts the test tube more */
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.4));
+}
+
+#stats-btn:hover svg {
+    transform: scale(1.1); /* Just a clean scale for the scroll */
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.4));
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+
+/* --- CARD STYLES --- */
+.card {
+    /* Fixed Dimensions as requested */
+    width: 220px;
+    height: 280px;
+    
+    position: relative;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between; /* Spacing */
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Aura */
+    box-shadow: 0 0 15px var(--aura-color, #ffffff);
+    animation: auraPulse 4s infinite ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 0 30px var(--aura-color, #ffffff);
+    border-color: rgba(255,255,255,0.4);
+}
+
+/* State: Taken */
+.card.taken {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    box-shadow: none;
+    transform: scale(0.95);
+    animation: none;
+    border-color: #374151;
+}
+
+.card.taken:hover {
+    /* Slight feedback that you can untake it */
+    transform: scale(0.97);
+    filter: grayscale(80%);
+    border-color: #ef4444; /* Red hint for undo */
+}
+
+/* --- ANIMATIONS --- */
+@keyframes auraPulse {
+    0% { box-shadow: 0 0 10px var(--aura-color); }
+    50% { box-shadow: 0 0 25px var(--aura-color); }
+    100% { box-shadow: 0 0 10px var(--aura-color); }
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px) rotate(-5deg); }
+    50% { transform: translateX(5px) rotate(5deg); }
+    75% { transform: translateX(-5px) rotate(-5deg); }
+    100% { transform: translateX(0); }
+}
+
+.animate-shake { animation: shake 0.4s ease-in-out; }
+
+/* --- ITEM UNLOCK ANIMATION --- */
+@keyframes itemPop {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+    70% { transform: scale(0.9) rotate(-5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@keyframes itemFadeOut {
+    0% { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(1.1) translateY(-20px); }
+}
+
+.animate-item-pop {
+    animation: itemPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-item-fade {
+    animation: itemFadeOut 0.5s ease-in forwards;
+}
+
+/* Ensure the font matches your apothecary style */
+.fantasy-title {
+    font-family: 'MedievalSharp', cursive;
+}
+
+/* Reward Item Tooltip Container */
+.reward-item {
+    position: relative;
+    cursor: help;
+}
+.reward-item:hover::after {
+    content: attr(data-desc);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 50;
+    pointer-events: none;
+    border: 1px solid #555;
+}
+
+/* Ensure the nav container doesn't squash the buttons */
+nav, .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+}
+
+#config-btn, #stats-btn {
+    /* Prevents the button from shrinking in a flexbox */
+    flex-shrink: 0; 
+    /* Ensures a perfectly square touch target for mobile */
+    aspect-ratio: 1 / 1; 
+}
+
+/* This fixes the SVG specifically */
+svg {
+    display: block;
+    overflow: visible; /* Allows the glow to bleed outside the box */
+}
+
+#config-btn svg {
+    overflow: visible !important;
+}

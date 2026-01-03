@@ -178,6 +178,11 @@ svg {
     overflow: visible; /* Allows the glow to bleed outside the box */
 }
 
+html, body {
+    overscroll-behavior-y: contain; /* Stops the "bounce" and accidental refreshing */
+    touch-action: manipulation;    /* Faster taps on mobile buttons */
+}
+
 #config-btn svg {
     overflow: visible !important;
 }

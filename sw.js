@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apothecary-v1';
+const CACHE_NAME = 'apothecary-v2';
 const assets = [
   './',
   './index.html',

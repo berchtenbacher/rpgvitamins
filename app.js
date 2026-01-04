@@ -154,6 +154,14 @@ function init() {
 
 function renderCards() {
     dom.glassTable.innerHTML = '';
+    
+    // 1. LAYOUT FIX:
+    // grid-cols-2: 2 columns on mobile (readable size)
+    // md:grid-cols-4: 4 columns on tablets
+    // lg:grid-cols-6: 6 columns on desktop (your request)
+    // gap-4: Adds breathing room so they don't spill into each other
+    dom.glassTable.className = "glass-panel w-full h-full overflow-y-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4 content-start items-start";
+
     const today = getDayName().slice(0, 2);
     const todayKey = getTodayKey();
     const takenItems = state.dailyLog[todayKey] || [];
@@ -169,18 +177,29 @@ function renderCards() {
         const isTaken = takenItems.includes(item.instanceId);
 
         const card = document.createElement('div');
-        card.className = `card ${isTaken ? 'taken' : ''}`;
+        
+        // 2. CARD SIZE FIX:
+        // w-full: Forces card to fit the grid column (stops spilling)
+        // h-auto: Allows height to adjust based on content
+        // min-h-[140px]: Ensures consistent height
+        card.className = `card relative w-full h-auto min-h-[140px] overflow-hidden rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-between p-2 transition-all ${isTaken ? 'taken opacity-50 grayscale scale-95' : 'hover:scale-105'}`;
+        
+        // Remove fixed width if it exists in CSS
+        card.style.width = '100%';
         card.style.setProperty('--aura-color', dbItem.baseColor);
+        
         card.innerHTML = `
-            <div class="w-full text-center mt-2">
-                <img src="${dbItem.sprite}" alt="icon" class="h-24 mx-auto object-contain pixel-art drop-shadow-md">
+            <div class="w-full text-center mt-1">
+                <img src="${dbItem.sprite}" alt="icon" class="h-12 w-12 mx-auto object-contain pixel-art drop-shadow-md">
             </div>
-            <div class="flex-grow flex flex-col justify-center w-full px-2">
-                <h2 class="font-medieval text-lg text-amber-100 leading-tight mb-1">${dbItem.fantasyName}</h2>
-                <p class="text-gray-400 text-[10px] italic leading-tight">"${dbItem.description}"</p>
+            
+            <div class="flex-grow flex flex-col justify-center w-full px-1 text-center mt-2">
+                <h2 class="font-medieval text-xs text-amber-100 leading-tight mb-1 line-clamp-1 break-words">${dbItem.fantasyName}</h2>
+                <p class="text-gray-400 text-[9px] italic leading-tight line-clamp-2 overflow-hidden text-ellipsis">"${dbItem.description}"</p>
             </div>
-            <div class="border-t border-gray-600 w-full py-2 bg-black/20 rounded-b-lg">
-                <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold block">${item.customName || dbItem.realName}</span>
+            
+            <div class="border-t border-gray-600 w-full py-1 bg-black/20 rounded-b-lg mt-2 text-center">
+                <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold block truncate px-1">${item.customName || dbItem.realName}</span>
             </div>
         `;
 

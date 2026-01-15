@@ -17,7 +17,7 @@ body {
 .glass-panel {
     background: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(0px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
@@ -47,13 +47,15 @@ body {
 
 /* --- CARD STYLES --- */
 .card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     /* Fixed Dimensions as requested */
     width: 220px;
     height: 280px;
     
     position: relative;
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.6);
     border-radius: 12px;
     padding: 1rem;
     display: flex;
@@ -178,11 +180,21 @@ svg {
     overflow: visible; /* Allows the glow to bleed outside the box */
 }
 
-html, body {
-    overscroll-behavior-y: contain; /* Stops the "bounce" and accidental refreshing */
-    touch-action: manipulation;    /* Faster taps on mobile buttons */
-}
-
 #config-btn svg {
     overflow: visible !important;
+}
+
+/* Ensure the grid doesn't cause horizontal scrolling */
+#main-content {
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+/* Optional: Make the cards slightly more compact on very small screens */
+@media (max-width: 380px) {
+    #card-container {
+        grid-cols: 2;
+        gap: 8px;
+        padding: 8px;
+    }
 }

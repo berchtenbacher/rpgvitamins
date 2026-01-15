@@ -1,7 +1,7 @@
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
 }
-import { ingredientDatabase, mysteryItem, alchemyProgress, rewards } from './gamedata.js';
+import { ingredientDatabase, mysteryItems, alchemyProgress, rewards } from './gamedata.js';
 
 // --- State Management ---
 const defaultState = {
@@ -90,7 +90,7 @@ const showItemNotification = (reward) => {
                 </div>
                 
                 <div class="text-center">
-                    <div class="text-amber-400 text-xs font-bold tracking-widest uppercase mb-1">Recipe Discovered</div>
+                    <div class="text-amber-400 text-xs font-bold tracking-widest uppercase mb-1">Arcanum Discovered</div>
                     <div class="text-3xl font-bold text-white mb-2 font-medieval">${reward.name}</div>
                     <div class="text-white/70 text-sm italic leading-relaxed px-2">"${reward.description}"</div>
                 </div>
@@ -155,12 +155,8 @@ function init() {
 function renderCards() {
     dom.glassTable.innerHTML = '';
     
-    // 1. LAYOUT FIX:
-    // grid-cols-2: 2 columns on mobile (readable size)
-    // md:grid-cols-4: 4 columns on tablets
-    // lg:grid-cols-6: 6 columns on desktop (your request)
-    // gap-4: Adds breathing room so they don't spill into each other
-    dom.glassTable.className = "glass-panel w-full h-full overflow-y-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4 content-start items-start";
+    // Layout: 2 cols on mobile, 4 on tablet, 6 on desktop
+    dom.glassTable.className = "glass-panel w-full h-full overflow-y-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 content-start place-items-center";
 
     const today = getDayName().slice(0, 2);
     const todayKey = getTodayKey();
@@ -172,20 +168,30 @@ function renderCards() {
         return;
     }
 
+    // --- NEW: TIERED XP CALCULATOR ---
+    // Returns the XP gained for reaching a specific number of items
+    const getXpDelta = (count) => {
+        if (count === 1) return 20;  // 1st Item: Big Start
+        if (count === 2) return 10;  // 2nd Item
+        if (count === 3) return 10;  // 3rd Item
+        if (count === 4) return 5;   // 4th Item
+        if (count > 4 && count <= 10) return 5; // 5th to 10th
+        return 0; // Cap at 10 items (No XP for 11+)
+    };
+
     todaysItems.forEach(item => {
-        const dbItem = ingredientDatabase.find(i => i.id === item.dataId) || { ...mysteryItem, realName: item.customName };
+        // Find Item or use Mystery Fallback
+        const dbItem = ingredientDatabase.find(i => i.id === item.dataId) || 
+                       mysteryItems.find(i => i.id === item.dataId) || 
+                       { ...mysteryItems[0], realName: item.customName }; 
+                       
         const isTaken = takenItems.includes(item.instanceId);
 
         const card = document.createElement('div');
         
-        // 2. CARD SIZE FIX:
-        // w-full: Forces card to fit the grid column (stops spilling)
-        // h-auto: Allows height to adjust based on content
-        // min-h-[140px]: Ensures consistent height
-        card.className = `card relative w-full h-auto min-h-[140px] overflow-hidden rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-between p-2 transition-all ${isTaken ? 'taken opacity-50 grayscale scale-95' : 'hover:scale-105'}`;
+        // CSS Classes (Cleaned for styles.css priority)
+        card.className = `card relative w-full h-auto min-h-[140px] overflow-hidden rounded-lg flex flex-col items-center justify-between p-2 transition-all ${isTaken ? 'taken opacity-50 grayscale scale-95' : 'hover:scale-105'}`;
         
-        // Remove fixed width if it exists in CSS
-        card.style.width = '100%';
         card.style.setProperty('--aura-color', dbItem.baseColor);
         
         card.innerHTML = `
@@ -194,22 +200,47 @@ function renderCards() {
             </div>
             
             <div class="flex-grow flex flex-col justify-center w-full px-1 text-center mt-2">
-                <h2 class="font-medieval text-xs text-amber-100 leading-tight mb-1 line-clamp-1 break-words">${dbItem.fantasyName}</h2>
-                <p class="text-gray-400 text-[9px] italic leading-tight line-clamp-2 overflow-hidden text-ellipsis">"${dbItem.description}"</p>
+                <h2 class="font-medieval text-amber-300 text-xs leading-tight mb-1 line-clamp-1 break-words">${dbItem.fantasyName}</h2>
+                <p class="text-[9px] italic text-gray-300 leading-tight line-clamp-2 overflow-hidden text-ellipsis">"${dbItem.description}"</p>
             </div>
             
             <div class="border-t border-gray-600 w-full py-1 bg-black/20 rounded-b-lg mt-2 text-center">
-                <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold block truncate px-1">${item.customName || dbItem.realName}</span>
+                <span class="text-[9px] text-gray-400 uppercase tracking-widest font-bold block truncate px-1">${item.customName || dbItem.realName}</span>
             </div>
         `;
 
-        card.addEventListener('click', () => toggleCardState(item.instanceId, card, isTaken));
+        // --- CLICK LOGIC UPDATED FOR TIERS ---
+        card.addEventListener('click', () => {
+            if (isTaken) {
+                // UNTAKE: Subtract XP based on the count *before* removal
+                // e.g. If I have 3 items, I lose the XP reward for the 3rd item
+                const xpToRemove = getXpDelta(takenItems.length);
+                state.xp = Math.max(0, state.xp - xpToRemove); // Prevent negative XP
+
+                const idx = takenItems.indexOf(item.instanceId);
+                if (idx > -1) takenItems.splice(idx, 1);
+            } else {
+                // TAKE: Add XP based on the *new* count
+                // e.g. If I have 2 items, this becomes the 3rd, so I get the 3rd item reward
+                const newCount = takenItems.length + 1;
+                const xpToAdd = getXpDelta(newCount);
+                
+                state.xp += xpToAdd;
+                
+                playSound(dbItem.sound || 'SFX/01Shimmer.wav');
+                takenItems.push(item.instanceId);
+                
+                if(typeof checkRewards === 'function') checkRewards();
+            }
+
+            state.dailyLog[todayKey] = takenItems;
+            saveState();
+            renderCards();
+            if(typeof renderStats === 'function') renderStats();
+        });
+
         dom.glassTable.appendChild(card);
     });
-
-    if (todaysItems.length > 0 && takenItems.length === todaysItems.length) {
-        showDailyComplete();
-    }
 }
 
 function toggleCardState(instanceId, cardElement, wasTaken) {
@@ -322,33 +353,84 @@ function renderStats() {
         });
     }
 
-    // --- 3. History Logic (Last 7 Days) ---
+    // 3. History Logic (Updated for 10 days + Foldable)
     dom.historyList.innerHTML = '';
-    const daysBack = 7;
-    for (let i = 0; i < daysBack; i++) {
+    
+    // Change loop from 7 to 10
+    for (let i = 0; i < 10; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateKey = d.toDateString();
-        const dateLabel = i === 0 ? "Today" : d.toLocaleDateString('en-US', { weekday: 'short' });
         
+        // Date Label: "Today", "Yesterday", or "Mon, Jan 12"
+        let dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        if (i === 0) dateLabel = "Today";
+        if (i === 1) dateLabel = "Yesterday";
+
         const logs = state.dailyLog[dateKey] || [];
+        
+        // Convert IDs to Real Names
         const itemNames = logs.map(logId => {
+            // Check Schedule first
             const schedItem = state.schedule.find(s => s.instanceId === logId);
-            return schedItem ? (schedItem.customName || "Unknown") : "Retired Item";
+            if (schedItem) return schedItem.customName;
+            
+            // Fallback for retired items (check raw DB or use ID)
+            const dbItem = ingredientDatabase.find(db => db.id === logId);
+            return dbItem ? dbItem.realName : "Unknown Elixir";
         });
 
+        const hasItems = itemNames.length > 0;
+
+        // Create the Container
         const li = document.createElement('li');
-        li.className = "flex justify-between border-b border-gray-700 pb-1";
+        li.className = "border-b border-white/10 last:border-0";
+
+        // A. The Clickable Header
+        const header = document.createElement('div');
+        header.className = `flex justify-between items-center p-2 transition-colors ${hasItems ? 'cursor-pointer hover:bg-white/5' : 'opacity-50'}`;
         
-        const statusHTML = itemNames.length > 0 
-            ? `<span class="text-green-400 truncate w-40 text-right text-xs">${itemNames.join(', ')}</span>`
+        // Status Text (e.g., "3 Brews" or "-")
+        const countText = hasItems 
+            ? `<span class="text-amber-400 text-xs font-bold">${logs.length} Items <span class="text-[8px] ml-1">▼</span></span>`
             : `<span class="text-gray-600 text-xs">-</span>`;
-            
-        li.innerHTML = `<span class="text-gray-400 font-mono text-xs">${dateLabel}</span> ${statusHTML}`;
+
+        header.innerHTML = `
+            <span class="text-gray-300 font-mono text-[10px] uppercase tracking-wide">${dateLabel}</span> 
+            ${countText}
+        `;
+
+        // B. The Hidden Details Pane
+        const details = document.createElement('div');
+        details.className = "hidden px-2 pb-2 text-xs text-gray-400 italic leading-relaxed bg-black/20 shadow-inner";
+        details.innerHTML = itemNames.join(', ');
+
+        // C. Click Logic (Toggle Visibility)
+        if (hasItems) {
+            header.addEventListener('click', () => {
+                // Toggle the hidden class
+                const isHidden = details.classList.contains('hidden');
+                
+                // Close all others first (Accordion effect - optional, but nice)
+                dom.historyList.querySelectorAll('.history-details').forEach(el => el.classList.add('hidden'));
+                
+                if (isHidden) {
+                    details.classList.remove('hidden');
+                    header.classList.add('bg-white/5'); // Keep highlighted
+                } else {
+                    details.classList.add('hidden');
+                    header.classList.remove('bg-white/5');
+                }
+            });
+            // Add a class for easy selection above
+            details.classList.add('history-details');
+        }
+
+        li.appendChild(header);
+        if (hasItems) li.appendChild(details);
         dom.historyList.appendChild(li);
     }
 }
-
 // Render Stats End
 
 function renderConfig() {
@@ -381,12 +463,42 @@ dom.addBtn.addEventListener('click', () => {
     let days = Array.from(selectedButtons).map(btn => btn.dataset.day);
     if (days.length === 0) days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']; 
 
-    const dbMatch = ingredientDatabase.find(i => i.realName.toLowerCase() === inputName.toLowerCase());
+    const lowerInput = inputName.toLowerCase();
     
+    // 1. Search Database (including the new aliases)
+    const dbMatch = ingredientDatabase.find(i => 
+        i.realName.toLowerCase() === lowerInput || 
+        i.id === lowerInput || 
+        (i.aliases && i.aliases.includes(lowerInput))
+    );
+    
+    let assignedId;
+    let assignedName;
+
+    if (dbMatch) {
+        assignedId = dbMatch.id;
+        assignedName = dbMatch.realName;
+    } else {
+        // --- UNIQUE MYSTERY RANDOMIZER ---
+        
+        // Find which mystery IDs are already in the schedule
+        const usedMysteryIds = state.schedule.map(item => item.dataId);
+
+        // Filter master mysteryItems list to find ones NOT in use
+        const availableMysteries = mysteryItems.filter(m => !usedMysteryIds.includes(m.id));
+
+        // Pick from available ones; if none left (all 7 used), use the full list as fallback
+        const pool = availableMysteries.length > 0 ? availableMysteries : mysteryItems;
+        const randomItem = pool[Math.floor(Math.random() * pool.length)];
+        
+        assignedId = randomItem.id;
+        assignedName = inputName; 
+    }
+
     state.schedule.push({
         instanceId: Date.now().toString(),
-        dataId: dbMatch ? dbMatch.id : "unknown",
-        customName: dbMatch ? dbMatch.realName : inputName, 
+        dataId: assignedId,
+        customName: assignedName,
         days: days
     });
 
